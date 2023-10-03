@@ -1,8 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    //id("maven-publish")
-    `maven-publish`
+    id("maven-publish")
 }
 
 android {
@@ -33,6 +32,12 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 dependencies {
@@ -47,9 +52,9 @@ dependencies {
 publishing {
     publications {
         register<MavenPublication>("release") {
-            groupId = "com.github.onixen"
+            groupId = "com.github.Onixen"
             artifactId = "player-wave-bar"
-            version = "0.2.1"
+            version = "0.2.3"
             description = "Default description."
 
             afterEvaluate {
