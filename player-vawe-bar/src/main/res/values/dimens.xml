@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="wave_stroke_width">2dp</dimen>
+    <dimen name="wave_stroke_width">4dp</dimen>
     <dimen name="wave_amplitude">4dp</dimen>
-    <dimen name="wave_view_indicator_radius">1dp</dimen>
+    <dimen name="wave_indicator_radius">6dp</dimen>
+    <item name="wave_indicator_multiplayer" type="dimen" format="float">1.2</item>
+    <dimen name="wave_frequency">14</dimen>
+    <dimen name="wave_rendering_step">1</dimen>
+    <dimen name="wave_start_offset">70</dimen>
 </resources>

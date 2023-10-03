@@ -7,6 +7,12 @@
         <attr name="amplitude" format="dimension" />
         <attr name="frequency" format="integer" />
         <attr name="offset" format="integer" />
+
+        <!-- The set value will determine the percentage
+             of the track played. It is used to visualize
+             the sine wave. When calling the method that
+             sets the track duration, the value will
+             automatically reset to 0.  -->
         <attr name="startFrom" format="integer" />
         <attr name="indicatorRadius" format="dimension" />
     </declare-styleable>
