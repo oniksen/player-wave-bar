@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PlayerWaveBar">
+        <attr name="waveColor" format="color" />
+        <attr name="waveWidth" format="dimension" />
+        <attr name="step" format="integer" />
+        <attr name="amplitude" format="dimension" />
+        <attr name="frequency" format="integer" />
+        <attr name="offset" format="integer" />
+        <attr name="startFrom" format="integer" />
+        <attr name="indicatorRadius" format="dimension" />
+    </declare-styleable>
+</resources>
