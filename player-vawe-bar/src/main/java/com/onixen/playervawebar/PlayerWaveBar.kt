@@ -1,4 +1,4 @@
-package com.oniksen.playervawebar
+package com.onixen.playervawebar
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
-import com.onixen.player_wave_bar.PlayerAnimators
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

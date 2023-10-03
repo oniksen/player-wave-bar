@@ -1,4 +1,4 @@
-package com.oniksen.audioplayer
+package com.onixen.audioplayer
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle

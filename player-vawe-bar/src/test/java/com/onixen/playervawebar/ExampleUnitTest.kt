@@ -1,4 +1,4 @@
-package com.oniksen.audioplayer
+package com.onixen.playervawebar
 
 import org.junit.Test
 

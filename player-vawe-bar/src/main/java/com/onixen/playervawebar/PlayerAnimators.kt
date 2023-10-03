@@ -1,7 +1,6 @@
-package com.onixen.player_wave_bar
+package com.onixen.playervawebar
 
 import android.animation.ValueAnimator
-import android.util.Log
 import android.view.animation.LinearInterpolator
 
 sealed class PlayerAnimators {
