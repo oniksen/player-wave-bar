@@ -1,8 +1,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("maven-publish")
-    //`maven-publish`
+    //id("maven-publish")
+    `maven-publish`
 }
 
 android {
@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         minSdk = 24
-        version = "0.2.1"
+        version = "0.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
