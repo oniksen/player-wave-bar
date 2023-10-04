@@ -5,7 +5,6 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,10 +13,10 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.transition.MaterialContainerTransform
 import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.PlayerFragmentBinding
-import com.onixen.audioplayer.dp
+import com.onixen.audioplayer.extentions.dp
 import com.onixen.audioplayer.model.MediaPlayer
 import com.onixen.audioplayer.model.data.TrackInfo
-import com.onixen.audioplayer.msToUserFriendlyStr
+import com.onixen.audioplayer.extentions.msToUserFriendlyStr
 
 class PlayerFragment(private val player: MediaPlayer): Fragment(R.layout.player_fragment) {
     private var _binding: PlayerFragmentBinding? = null

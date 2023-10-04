@@ -1,4 +1,4 @@
-package com.onixen.audioplayer
+package com.onixen.audioplayer.extentions
 
 import android.content.Context
 import kotlin.time.Duration.Companion.milliseconds
