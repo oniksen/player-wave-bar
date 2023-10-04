@@ -24,19 +24,20 @@ class PlayerWaveBar @JvmOverloads constructor(
     attrs: AttributeSet,
     defStyleAttr: Int = 0
 ): View(context, attrs, defStyleAttr) {
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-    private val idicatorMultiplier: Float = 1.2f
+    private lateinit var barPositionAnimator: ValueAnimator //Animator for the position of the indicator and the sine wave on the bar
+    private lateinit var offsetAnimator: ValueAnimator
+
+    private var waveStrokeWidth: Float = resources.getDimension(R.dimen.wave_stroke_width)
+    private var amplitude: Float = resources.getDimension(R.dimen.wave_amplitude)
+    private var indicatorRadius: Float = resources.getDimension(R.dimen.wave_indicator_radius)
+    private var idicatorMultiplier: Float = resources.getFloat(R.dimen.wave_indicator_multiplayer)
+    private var frequency: Int = resources.getInteger(R.dimen.wave_frequency)
+    private var renderingStep: Int = resources.getInteger(R.dimen.wave_rendering_step)
+    private var startOffset: Int = resources.getInteger(R.dimen.wave_start_offset)
 
     private var wavePrimaryColor = ContextCompat.getColor(context, R.color.wave_color)
     private var waveColorNotCompleated = ContextCompat.getColor(context, R.color.wave_color_not_compleated)
-    private var waveStrokeWidth = 4.dpToPx()
-    /** шаг с которым отрисовывается синусоида */
-    private var step: Int = 1
-    private var amplitude: Float = 4.dpToPx()
-    private var frequency: Int = 14
-    /** Стартовое смещение синусоиды */
-    private var offset: Int = 0
-    private var indicatorRadius = 6.dpToPx()
+
     private val indicatorPaint = Paint().apply {
         color = wavePrimaryColor
         style = Paint.Style.FILL_AND_STROKE
@@ -55,29 +56,25 @@ class PlayerWaveBar @JvmOverloads constructor(
         strokeWidth = waveStrokeWidth
         isAntiAlias = true
     }
-    private lateinit var offsetAnimator: ValueAnimator
-    private var animatedOffsetValue: Int = 0
 
-    /** Процент с которого начинается заполнение бара. Используется для отображения синусоиды в layout */
-    private var startFrom = 0
+    private var animatedOffsetValue: Int = 0
+    private var filledInPercentage = 0
     private var minViewHeight = 0
     private val minViewWidth = 400
-    /** Значение X координаты для обработки перемещения индикатора жестом */
-    private var actionX = 0f
+    private var waveCoordinateX = 0f
     private var indicatorFullRadius = 0f
-
-    /** Коэффициент пропорциональности длинны трека относительно длинны бара */
+    /** The coefficient of proportionality of the track length relative to the length of the bar. */
     private var propCoef: Float = 0f
-    /** Аниматор для положения индикатора и синусоиды на баре */
-    private lateinit var barPositionAnimator: ValueAnimator
     private var trackPosition: Int = 0
     private var audioIsPlaying: Boolean = false
-
     private var trackDuration: Int = 0
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     private val trackCurrentTime: MutableStateFlow<Int> by lazy { MutableStateFlow(-1) }
     private val rewindTime: MutableStateFlow<Int> by lazy { MutableStateFlow(-1) }
 
     init {
+        idicatorMultiplier = resources.getFloat(R.dimen.wave_indicator_multiplayer)
         initByUserXmlValues(attrs)
         setPaints()
 
@@ -108,17 +105,20 @@ class PlayerWaveBar @JvmOverloads constructor(
         val path = Path()
         path.moveTo(startX, centerY)
 
-        val trackPosInCoord = trackPosition / propCoef + indicatorFullRadius
+        var trackPosInCoord = trackPosition / propCoef + indicatorFullRadius
+        if (trackPosInCoord.isNaN() && filledInPercentage > 0) {
+            trackPosInCoord = calculateStartFrom(startX)
+        }
 
         var xPos = startX
         while (xPos < trackPosInCoord) {
-            val y = centerY + sin((xPos + (Math.PI.toFloat() / 4f) * animatedOffsetValue) / frequency) * amplitude
+            val y = calculateY(centerY, xPos)
 
             path.lineTo(xPos, y)
             path.moveTo(xPos, y)
 
-            actionX = xPos
-            xPos += step
+            waveCoordinateX = xPos
+            xPos += renderingStep
         }
         if (trackPosInCoord.isNaN()) {
             canvas.drawLine(startX, centerY, endX, centerY, wavePaintNotCompleated)
@@ -145,14 +145,19 @@ class PlayerWaveBar @JvmOverloads constructor(
     private fun initByUserXmlValues(attrs: AttributeSet) {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.PlayerWaveBar)
         wavePrimaryColor = typedArray.getColor(R.styleable.PlayerWaveBar_waveColor, wavePrimaryColor)
-        waveStrokeWidth = typedArray.getDimension(R.styleable.PlayerWaveBar_waveWidth, waveStrokeWidth)
-        step = typedArray.getInt(R.styleable.PlayerWaveBar_step, step)
+        waveStrokeWidth = typedArray.getDimension(R.styleable.PlayerWaveBar_waveStrokeWidth, waveStrokeWidth)
+        renderingStep = typedArray.getInt(R.styleable.PlayerWaveBar_renderingStep, renderingStep)
         amplitude = typedArray.getDimension(R.styleable.PlayerWaveBar_amplitude, amplitude)
         frequency = typedArray.getInt(R.styleable.PlayerWaveBar_frequency, frequency)
-        offset = typedArray.getInt(R.styleable.PlayerWaveBar_offset, offset)
-        startFrom = typedArray.getInt(R.styleable.PlayerWaveBar_startFrom, startFrom)
-        indicatorRadius = typedArray.getDimension(R.styleable.PlayerWaveBar_indicatorRadius, indicatorRadius)
+        startOffset = typedArray.getInt(R.styleable.PlayerWaveBar_offset, startOffset)
+        filledInPercentage = typedArray.getInt(R.styleable.PlayerWaveBar_filledIn, filledInPercentage)
+        indicatorRadius = typedArray.getDimension(R.styleable.PlayerWaveBar_indicatorRadius, resources.getDimension(R.dimen.wave_indicator_radius))
         typedArray.recycle()
+    }
+    private fun calculateStartFrom(startDx: Float): Float {
+        val availableWidth = width - indicatorFullRadius * 2
+        val fillingPercentage = (availableWidth / 100 * filledInPercentage)
+        return startDx + fillingPercentage
     }
     private fun setPaints() {
         indicatorPaint.apply {
@@ -172,13 +177,13 @@ class PlayerWaveBar @JvmOverloads constructor(
         val calculatedIndicatorHeight = (indicatorRadius * 2 + waveStrokeWidth) * idicatorMultiplier
         return if (calculatedIndicatorHeight < calculatedGraphicHeight) { calculatedGraphicHeight.toInt() } else { calculatedIndicatorHeight.toInt() }
     }
-    private fun calculateY(centerY: Float): Float {
-        return centerY + sin((x + (Math.PI.toFloat() / 4f) * animatedOffsetValue) / frequency) * amplitude
+    private fun calculateY(centerY: Float, currentX: Float): Float {
+        return centerY + sin((currentX + (animatedOffsetValue + startOffset)) / frequency) * amplitude
     }
     private fun initAnimators() {
         val to = (trackDuration / (frequency * 4)) * 10
         offsetAnimator = PlayerAnimators.Offset(0, to, trackDuration.toLong()).create {
-            this@PlayerWaveBar.animatedOffsetValue = it
+            this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
         barPositionAnimator = PlayerAnimators.Position(
@@ -209,7 +214,7 @@ class PlayerWaveBar @JvmOverloads constructor(
         }
         val to = (timeDx / (frequency * 4)) * 10
         offsetAnimator = PlayerAnimators.Offset(trackPosition, to, timeDx.toLong()).create {
-            this@PlayerWaveBar.animatedOffsetValue = it
+            this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
         coroutineScope.launch { rewindTime.emit(trackPosition) }
@@ -226,14 +231,14 @@ class PlayerWaveBar @JvmOverloads constructor(
         if (eventX < leftBorder || eventX > rightBorder) return false
 
         // Вычисление на сколько необходимо сдвинуть индикатор
-        val dx = eventX - actionX
+        val dx = eventX - waveCoordinateX
 
         if (eventX in 0f..rightBorder) {
             val offset = (dx * propCoef).toInt()
             if (trackPosition + offset in 0..trackDuration)
                 trackPosition += offset
             Log.d(TAG, "performActionMove: track position = $trackPosition")
-            actionX = eventX
+            waveCoordinateX = eventX
 
             invalidate()
         }
@@ -241,9 +246,6 @@ class PlayerWaveBar @JvmOverloads constructor(
     }
     private fun calculatePropCoef(trackDuration: Int, barWidth: Int, indicatorRadius: Float): Float {
         return trackDuration.toFloat() / (barWidth.toFloat() - indicatorRadius * 2)
-    }
-    private fun Int.dpToPx(): Float {
-        return this * resources.displayMetrics.density
     }
 
     fun setTrackDuration(value: Int) {

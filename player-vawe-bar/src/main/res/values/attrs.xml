@@ -2,12 +2,29 @@
 <resources>
     <declare-styleable name="PlayerWaveBar">
         <attr name="waveColor" format="color" />
-        <attr name="waveWidth" format="dimension" />
-        <attr name="step" format="integer" />
+
+
+        <attr name="waveStrokeWidth" format="dimension" />
+
+        <!-- The step with which the next point of the sine wave will be calculated -->
+        <attr name="renderingStep" format="integer" />
+
+        <!-- The sine wave will stretch N times vertically. -->
         <attr name="amplitude" format="dimension" />
+
+        <!-- The sine wave will stretch N times horizontally. -->
         <attr name="frequency" format="integer" />
+
+        <!-- The initial displacement of the sine wave along the X-axis to the left. -->
         <attr name="offset" format="integer" />
-        <attr name="startFrom" format="integer" />
+
+        <!-- The set value will determine the percentage
+             of the track played. It is used to visualize
+             the sine wave. When calling the method that
+             sets the track duration, the value will
+             automatically reset to 0.  -->
+        <attr name="filledIn" format="integer" />
+
         <attr name="indicatorRadius" format="dimension" />
     </declare-styleable>
 </resources>
