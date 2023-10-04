@@ -1,4 +1,4 @@
-package com.oniksen.playgroundmvi_pattern.states
+package com.onixen.audioplayer.states
 
 import com.onixen.audioplayer.model.data.TrackInfo
 
@@ -8,8 +8,8 @@ sealed class PlayerState {
         val metadata: TrackInfo
     ): PlayerState()
     class Prepared(val info: TrackInfo): PlayerState()
-    data object Start : PlayerState()
-    data object Resume: PlayerState()
+    data object Started: PlayerState()
+    data object Resumed: PlayerState()
     data object Paused: PlayerState()
-    data object Stop: PlayerState()
+    data object Stopped: PlayerState()
 }
