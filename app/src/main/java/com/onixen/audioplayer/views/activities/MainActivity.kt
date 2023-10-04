@@ -5,6 +5,7 @@ import android.os.Bundle
 import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.ActivityMainBinding
 import com.onixen.audioplayer.views.fragments.PlayerFragment
+import com.onixen.audioplayer.views.fragments.TracksListFragment
 
 class MainActivity : AppCompatActivity() {
     private var _binding: ActivityMainBinding? = null
@@ -16,7 +17,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(binding.fragmentContainer.id, PlayerFragment.getInstance())
+        transaction.replace(binding.fragmentContainer.id, TracksListFragment.getInstance())
         transaction.commit()
     }
 }
