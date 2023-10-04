@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        app:startFrom="50"
-        app:offset="50"/>
+        app:filledIn="70"
+        app:frequency="30"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
