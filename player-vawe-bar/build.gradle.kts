@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         minSdk = 24
-        version = "0.2.5"
+        version = "0.2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -54,7 +54,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "com.github.Onixen"
             artifactId = "player-wave-bar"
-            version = "0.2.3"
+            version = "0.2.6"
             description = "Default description."
 
             afterEvaluate {
