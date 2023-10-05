@@ -77,9 +77,10 @@ class PlayerViewModel: ViewModel() {
             if (player != null)
                 _playerState.emit(
                     PlayerState.Recovered(
-                    currentPos = player!!.getCurrentPos(),
-                    metadata = player!!.getMetadata()
-                ))
+                        currentPos = player!!.getCurrentPos(),
+                        metadata = player!!.getMetadata()
+                    )
+                )
         }
     }
 
