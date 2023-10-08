@@ -26,6 +26,7 @@ import com.onixen.audioplayer.model.data.TrackInfo
 import com.onixen.audioplayer.extentions.msToUserFriendlyStr
 import com.onixen.audioplayer.viewModels.PlayerViewModel
 import com.onixen.audioplayer.views.interfaces.PlayerView
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 class PlayerFragment(private val player: MediaPlayer): Fragment(R.layout.player_fragment), PlayerView {
@@ -73,13 +74,12 @@ class PlayerFragment(private val player: MediaPlayer): Fragment(R.layout.player_
         animatorSet.playTogether(widthAnimation, imgOffsetAnimation, backBtnAnimation)
         animatorSet.start()
         animatorSet.doOnEnd {
-            Log.d(TAG, "onCreateView: player state = ${playerVM.playerState.value}")
+            Log.d(TAG, "onCreateView: playerVM.playerState.value = ${playerVM.playerState.value}")
             when(playerVM.playerState.value) {
-                is PlayerState.Started,
-                is PlayerState.Recovered-> { playerVM.sendIntent(PlayerIntent.Recover) }
+                is PlayerState.Started, is PlayerState.RecoveredStarted -> { playerVM.sendIntent(PlayerIntent.RecoverStarted) }
+                is PlayerState.Paused, is PlayerState.RecoveredPaused -> { playerVM.sendIntent(PlayerIntent.RecoverPaused) }
                 else -> { playerVM.sendIntent(PlayerIntent.Prepare) }
             }
-            //playerVM.sendIntent(PlayerIntent.Prepare)
             playerActionsHandler()
         }
 
@@ -143,7 +143,8 @@ class PlayerFragment(private val player: MediaPlayer): Fragment(R.layout.player_
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 playerVM.playerState.collect {
                     when(it) {
-                        is PlayerState.Recovered -> { trackIsRecovered(it.currentPos, it.metadata) }
+                        is PlayerState.RecoveredPaused -> { recoveredPausedTrack(it.currentPos, it.metadata) }
+                        is PlayerState.RecoveredStarted -> { recoveredStartedTrack(it.currentPos, it.metadata) }
                         is PlayerState.Prepared -> {
                             trackIsPrepared(it.info)
                             setActionPlayTrackBtn()
@@ -184,40 +185,45 @@ class PlayerFragment(private val player: MediaPlayer): Fragment(R.layout.player_
         }
     }
     private fun trackIsPrepared(info: TrackInfo) {
-        Log.d(TAG, "trackIsPrepared()")
         binding.playerBar.setTrackDuration(info.duration?.toInt()!!)
         binding.fullTrackTime.text = info.duration.toInt().msToUserFriendlyStr()
     }
     private fun trackIsPlayed() {
-        Log.d(TAG, "trackIsPlayed()")
         binding.apply {
             playPauseBtn.setImageResource(R.drawable.pause)
             playerBar.startAnimation()
         }
     }
     private fun trackIsResumed() {
-        Log.d(TAG, "trackIsResumed()")
         binding.apply {
             playPauseBtn.setImageResource(R.drawable.pause)
             playerBar.resumeAnimation()
         }
     }
     private fun trackIsPaused() {
-        Log.d(TAG, "trackIsPaused: ")
         binding.apply {
             playPauseBtn.setImageResource(R.drawable.play_arrow)
             playerBar.pauseAnimation()
         }
     }
-    private fun trackIsRecovered(currentPos: Int, metadata: TrackInfo) {
-        Log.d(TAG, "trackIsRecovered: currentPos = $currentPos")
+    private fun recoveredPausedTrack(currentPos: Int, metadata: TrackInfo) {
         binding.apply {
             playerBar.setTrackPosition(currentPos)
             playerBar.setTrackDuration(metadata.duration!!.toInt())
+            playPauseBtn.setImageResource(R.drawable.play_arrow)
+            setActionPlayTrackBtn()
+            playerBar.startAnimation()
+            playerBar.pauseAnimation()
+        }
+    }
+    private fun recoveredStartedTrack(currentPos: Int, metadata: TrackInfo) {
+        binding.apply {
+            playerBar.setTrackPosition(currentPos)
+            playerBar.setTrackDuration(metadata.duration!!.toInt())
+            playPauseBtn.setImageResource(R.drawable.pause)
+            setActionPauseTrackBtn()
             playerBar.startAnimation()
         }
-        binding.playPauseBtn.setImageResource(R.drawable.pause)
-        setActionPauseTrackBtn()
     }
     private fun setActionPlayTrackBtn() {
         binding.startBtn.setOnClickListener {

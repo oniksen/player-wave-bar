@@ -3,7 +3,11 @@ package com.onixen.audioplayer.states
 import com.onixen.audioplayer.model.data.TrackInfo
 
 sealed class PlayerState {
-    class Recovered(
+    class RecoveredPaused(
+        val currentPos: Int,
+        val metadata: TrackInfo
+    ): PlayerState()
+    class RecoveredStarted(
         val currentPos: Int,
         val metadata: TrackInfo
     ): PlayerState()

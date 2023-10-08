@@ -9,14 +9,19 @@ import com.onixen.audioplayer.states.PlayerState
 import com.onixen.audioplayer.model.MediaPlayer
 import com.onixen.audioplayer.views.interfaces.PlayerView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PlayerViewModel: ViewModel() {
     private var playerView: PlayerView? = null
     private var player: MediaPlayer? = null
+
+    private var penultimateState: PlayerState? = null
 
     private val _playerState: MutableStateFlow<PlayerState> = MutableStateFlow(PlayerState.Stopped)
     val playerState = _playerState.asStateFlow()
@@ -29,16 +34,21 @@ class PlayerViewModel: ViewModel() {
     }
     fun sendIntent(intent: PlayerIntent) {
         when (intent) {
-            is Recover -> { recoverTrack() }
+            is RecoverPaused -> { recoverPausedTrack() }
+            is RecoverStarted -> { recoverStartedTrack() }
             is Prepare -> { getTrackInfo() }
             is Play -> { startAudio() }
             is Pause -> { pauseAudio() }
             is Rewind -> { rewindAudio(intent.newPos) }
         }
     }
+    fun getPenultimateState(): PlayerState? {
+        return penultimateState
+    }
     private fun startAudio() {
         Log.d(TAG, "startAudio()")
         viewModelScope.launch {
+            penultimateState = _playerState.value
             val lastState = withContext(Dispatchers.IO) { _playerState.replayCache.last() }
             if (lastState is PlayerState.Stopped || lastState is PlayerState.Prepared) {
                 _playerState.emit(PlayerState.Started)
@@ -52,6 +62,7 @@ class PlayerViewModel: ViewModel() {
     private fun pauseAudio() {
         Log.d(TAG, "pauseAudio()")
         viewModelScope.launch {
+            penultimateState = _playerState.value
             player?.pauseTrack()
             _playerState.emit(PlayerState.Paused)
         }
@@ -59,6 +70,7 @@ class PlayerViewModel: ViewModel() {
     private fun rewindAudio(newPos: Int) {
         Log.d(TAG, "rewindAudio($newPos)")
         viewModelScope.launch {
+            penultimateState = _playerState.value
             val lastState = withContext(Dispatchers.IO) { _playerState.replayCache.last() }
             player?.rewindTrack(newPos)
             if (lastState == PlayerState.Stopped || lastState == PlayerState.Paused) {
@@ -69,18 +81,34 @@ class PlayerViewModel: ViewModel() {
     private fun getTrackInfo() {
         Log.d(TAG, "getTrackInfo()")
         viewModelScope.launch {
+            penultimateState = _playerState.value
             _playerState.emit(PlayerState.Prepared(player!!.getMetadata()))
         }
     }
-    private fun recoverTrack() {
+    private fun recoverPausedTrack() {
         viewModelScope.launch {
-            if (player != null)
+            if (player != null) {
+                penultimateState = _playerState.value
                 _playerState.emit(
-                    PlayerState.Recovered(
+                    PlayerState.RecoveredPaused(
                         currentPos = player!!.getCurrentPos(),
                         metadata = player!!.getMetadata()
                     )
                 )
+            }
+        }
+    }
+    private fun recoverStartedTrack() {
+        viewModelScope.launch {
+            if (player != null) {
+                penultimateState = _playerState.value
+                _playerState.emit(
+                    PlayerState.RecoveredStarted(
+                        currentPos = player!!.getCurrentPos(),
+                        metadata = player!!.getMetadata()
+                    )
+                )
+            }
         }
     }
 
