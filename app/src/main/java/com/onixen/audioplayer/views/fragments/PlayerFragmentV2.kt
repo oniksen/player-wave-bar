@@ -138,17 +138,8 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
                 playerVM.playerState.collect {
                     it?.let {
                         when(it) {
-                            is PlayerStateV2.Started -> {
-                                setActionPauseTrackBtn()
-                                if (it.currentPos == 0) {
-                                    startTrack()
-                                } else {
-                                    resumeTrack(currentPos = it.currentPos)
-                                }
-                            }
-                            is PlayerStateV2.Paused -> {
-                                setActionPlayTrackBtn()
-                            }
+                            is PlayerStateV2.Started -> { startTrack(it.currentPos) }
+                            is PlayerStateV2.Paused -> { pauseTrack() }
                         }
                     }
                 }
@@ -170,13 +161,28 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
             fullImg.setImageBitmap(trackInfo.art)
         }
     }
-    private fun startTrack() {
-        Log.i(TAG, "startTrack()")
-        binding.playerBar.startAnimation()
+    /**
+     * The function starts or restores the playback of the track depending on the current position of the tracks.
+     * Also changes the state of the interface.
+     * @param currentPos Number of milliseconds played.
+     * */
+    private fun startTrack(currentPos: Int) {
+        setActionPauseTrackBtn()
+        if (currentPos == 0) {
+            Log.i(TAG, "startTrack()")
+            binding.playerBar.startAnimation()
+        } else {
+            Log.i(TAG, "resumeTrack($currentPos)")
+            binding.playerBar.resumeAnimation()
+        }
+
     }
-    private fun resumeTrack(currentPos: Int) {
-        Log.i(TAG, "resumeTrack($currentPos)")
-        binding.playerBar.resumeAnimation()
+    /** The function pauses the playback of the track and also changes the state of the interface. */
+    private fun pauseTrack() {
+        setActionPlayTrackBtn()
+        Log.i(TAG, "pauseTrack()")
+        binding.playerBar.startAnimation()
+        binding.playerBar.pauseAnimation()
     }
 
     private fun setActionPlayTrackBtn() {
