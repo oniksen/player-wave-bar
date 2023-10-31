@@ -33,6 +33,7 @@ import com.onixen.audioplayer.views.interfaces.PlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -148,6 +149,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
                             }
                             is PlayerStateV2.Paused -> {
                                 setActionPlayTrackBtn()
+                                pauseTrack()
                             }
                         }
                     }
@@ -168,6 +170,8 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
             fullTrackTime.text = trackInfo.duration.toInt().msToUserFriendlyStr()
             currentTrackTime.text = trackInfo.currentTime.msToUserFriendlyStr()
             fullImg.setImageBitmap(trackInfo.art)
+            addRewindFlowListener()
+            addCurrentTimeListener()
         }
     }
     private fun startTrack() {
@@ -177,6 +181,10 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     private fun resumeTrack(currentPos: Int) {
         Log.i(TAG, "resumeTrack($currentPos)")
         binding.playerBar.resumeAnimation()
+    }
+    private fun pauseTrack() {
+        Log.i(TAG, "pauseTrack()")
+        binding.playerBar.pauseAnimation()
     }
 
     private fun setActionPlayTrackBtn() {
@@ -193,6 +201,26 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         }
         binding.playPauseBtn.setImageResource(R.drawable.pause)
     }
+
+    private fun addRewindFlowListener() {
+        lifecycleScope.launch {
+            binding.playerBar.getRewindTimeFlow().collect {
+                Log.d(TAG, "addRewindFlowListener: it = $it")
+                if (it > 0)
+                    playerVM.sendIntent(PlayerIntent.Rewind(it))
+            }
+        }
+    }
+    private fun addCurrentTimeListener() {
+        lifecycleScope.launch {
+            binding.playerBar.getCurrentTimeFlow().collect {
+                if (it > 0) {
+                    binding.currentTrackTime.text = it.msToUserFriendlyStr()
+                }
+            }
+        }
+    }
+
     override fun returnContext(): Context {
         return requireContext()
     }
