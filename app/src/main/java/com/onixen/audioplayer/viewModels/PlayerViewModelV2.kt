@@ -31,7 +31,9 @@ class PlayerViewModelV2: ViewModel() {
         when (intent) {
             is PlayerIntent.Play -> { startAudio() }
             is PlayerIntent.Pause -> { pauseAudio() }
-            else -> { }
+            is PlayerIntent.Rewind -> { rewindAudio(ms = intent.newPos) }
+            else -> {
+                Log.w(TAG, "sendIntent: unknown player intent.") }
         }
     }
 
@@ -40,6 +42,7 @@ class PlayerViewModelV2: ViewModel() {
         Log.i(TAG, "prepareView: $updated")
         return updated
     }
+
     /**
      * A function that starts a track or resumes it depending on the current state.
      * */
@@ -62,6 +65,18 @@ class PlayerViewModelV2: ViewModel() {
             }
         }
     }
+    private fun rewindAudio(ms: Int) {
+        Log.d(TAG, "rewindAudio: new audio track position = $ms")
+        viewModelScope.launch {
+            if (player?.isPlaying == true) {
+                player?.seekTo(ms)
+            } else {
+                player?.seekTo(ms)
+                player?.pause()
+            }
+        }
+    }
+
     companion object {
         private const val TAG = "player_view_model_v2"
     }
