@@ -4,9 +4,10 @@
     <dimen name="wave_amplitude">4dp</dimen>
     <dimen name="wave_indicator_radius">6dp</dimen>
     <item name="wave_indicator_multiplayer" type="dimen" format="float">1.2f</item>
-    <item name="wave_frequency" type="dimen" format="integer">14</item>
-    <item name="wave_rendering_step" type="dimen" format="integer">1</item>
-    <item name="wave_start_offset" type="dimen" format="integer">70</item>
+    <string name="wave_indicator_multiplayer">1.2</string>
+    <integer name="wave_frequency">14</integer>
+    <integer name="wave_rendering_step">1</integer>
+    <integer name="wave_start_offset">70</integer>
     <!--<dimen name="wave_rendering_step">1</dimen>-->
     <!--<dimen name="wave_start_offset">70</dimen>-->
 </resources>
