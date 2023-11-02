@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -30,10 +31,10 @@ class PlayerWaveBar @JvmOverloads constructor(
     private var waveStrokeWidth: Float = resources.getDimension(R.dimen.wave_stroke_width)
     private var amplitude: Float = resources.getDimension(R.dimen.wave_amplitude)
     private var indicatorRadius: Float = resources.getDimension(R.dimen.wave_indicator_radius)
-    private var idicatorMultiplier: Float = resources.getFloat(R.dimen.wave_indicator_multiplayer)
-    private var frequency: Int = resources.getInteger(R.dimen.wave_frequency)
-    private var renderingStep: Int = resources.getInteger(R.dimen.wave_rendering_step)
-    private var startOffset: Int = resources.getInteger(R.dimen.wave_start_offset)
+    private var idicatorMultiplier: Float = resources.getString(R.string.wave_indicator_multiplayer).toFloat()
+    private var frequency: Int = resources.getInteger(R.integer.wave_frequency)
+    private var renderingStep: Int = resources.getInteger(R.integer.wave_rendering_step)
+    private var startOffset: Int = resources.getInteger(R.integer.wave_start_offset)
 
     private var wavePrimaryColor = ContextCompat.getColor(context, R.color.wave_color)
     private var waveColorNotCompleated = ContextCompat.getColor(context, R.color.wave_color_not_compleated)
@@ -74,7 +75,7 @@ class PlayerWaveBar @JvmOverloads constructor(
     private val rewindTime: MutableStateFlow<Int> by lazy { MutableStateFlow(-1) }
 
     init {
-        idicatorMultiplier = resources.getFloat(R.dimen.wave_indicator_multiplayer)
+        idicatorMultiplier = resources.getString(R.string.wave_indicator_multiplayer).toFloat()
         initByUserXmlValues(attrs)
         setPaints()
 
