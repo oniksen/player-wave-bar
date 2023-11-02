@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
+/**
+ *
+ * */
 class PlayerWaveBar @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet,
@@ -123,6 +126,7 @@ class PlayerWaveBar @JvmOverloads constructor(
         }
         if (trackPosInCoord.isNaN()) {
             canvas.drawLine(startX, centerY, endX, centerY, wavePaintNotCompleated)
+            canvas.drawCircle(startX, centerY, indicatorRadius, indicatorPaint)
         } else {
             canvas.drawPath(path, wavePaint)
             canvas.drawLine(trackPosInCoord, centerY, endX, centerY, wavePaintNotCompleated)
@@ -249,11 +253,37 @@ class PlayerWaveBar @JvmOverloads constructor(
         return trackDuration.toFloat() / (barWidth.toFloat() - indicatorRadius * 2)
     }
 
+
+    /**
+     * The Wave Bar preset method for synchronous operation with the track.
+     *
+     * @param trackDuration The full length of the track in milliseconds.
+     * @param currentPosition The number of milliseconds already played.
+     * */
+    fun prepare(duration: Int, position: Int) {
+        // Functions are called in a strictly specified sequence.
+        this.trackDuration = duration
+        this.trackPosition = position
+        this.propCoef = calculatePropCoef(trackDuration, width, indicatorFullRadius)
+        initAnimators()
+    }
+    @Deprecated(
+        message = "The method will be removed in one of the following versions, because the operability of the entire wave Bar depends on the sequence " +
+                "of calling this method. When using the new method, you should remove the use of setTrackPosition().",
+        replaceWith = ReplaceWith(expression = "this.prepare(duration = 0, position = 0)"),
+        level = DeprecationLevel.WARNING
+    )
     fun setTrackDuration(value: Int) {
         trackDuration = value
         propCoef = calculatePropCoef(value, width, indicatorFullRadius)
         initAnimators()
     }
+    @Deprecated(
+        message = "The method will be removed in one of the following versions, because the operability of the entire wave Bar depends on the sequence " +
+                "of calling this method. When using the new method, you should remove the use of setTrackDuration().",
+        replaceWith = ReplaceWith(expression = "this.prepare(duration = 0, position = 0)"),
+        level = DeprecationLevel.WARNING
+    )
     fun setTrackPosition(value: Int) {
         trackPosition = value
     }
@@ -277,6 +307,7 @@ class PlayerWaveBar @JvmOverloads constructor(
         barPositionAnimator.resume()
         audioIsPlaying = true
     }
+
     fun getCurrentTimeFlow(): Flow<Int> {
         return trackCurrentTime
     }
