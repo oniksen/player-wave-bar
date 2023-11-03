@@ -18,15 +18,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.log
 import kotlin.math.sin
 
+/**
+ *
+ * */
 class PlayerWaveBar @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet,
     defStyleAttr: Int = 0
 ): View(context, attrs, defStyleAttr) {
-    private lateinit var barPositionAnimator: ValueAnimator //Animator for the position of the indicator and the sine wave on the bar
-    private lateinit var offsetAnimator: ValueAnimator
+    private var barPositionAnimator: ValueAnimator? = null //Animator for the position of the indicator and the sine wave on the bar
+    private var offsetAnimator: ValueAnimator? = null
 
     private var waveStrokeWidth: Float = resources.getDimension(R.dimen.wave_stroke_width)
     private var amplitude: Float = resources.getDimension(R.dimen.wave_amplitude)
@@ -123,6 +127,7 @@ class PlayerWaveBar @JvmOverloads constructor(
         }
         if (trackPosInCoord.isNaN()) {
             canvas.drawLine(startX, centerY, endX, centerY, wavePaintNotCompleated)
+            canvas.drawCircle(startX, centerY, indicatorRadius, indicatorPaint)
         } else {
             canvas.drawPath(path, wavePaint)
             canvas.drawLine(trackPosInCoord, centerY, endX, centerY, wavePaintNotCompleated)
@@ -182,11 +187,21 @@ class PlayerWaveBar @JvmOverloads constructor(
         return centerY + sin((currentX + (animatedOffsetValue + startOffset)) / frequency) * amplitude
     }
     private fun initAnimators() {
+        Log.i(TAG, "initAnimators: ")
+
         val to = (trackDuration / (frequency * 4)) * 10
-        offsetAnimator = PlayerAnimators.Offset(0, to, trackDuration.toLong()).create {
+        offsetAnimator?.cancel()
+        offsetAnimator = PlayerAnimators.Offset(
+            from = 0,
+            to = to,
+            duration = trackDuration.toLong()
+        ).create {
+            Log.d(TAG, "preformActionUp: offsetAnimator ${this.offsetAnimator} is running = ${this.offsetAnimator?.isRunning}")
             this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
+
+        barPositionAnimator?.cancel()
         barPositionAnimator = PlayerAnimators.Position(
             trackPosition,
             trackDuration,
@@ -198,12 +213,16 @@ class PlayerWaveBar @JvmOverloads constructor(
         }
     }
     private fun preformActionDown() {
-        barPositionAnimator.pause()
+        barPositionAnimator?.pause()
         indicatorRadius *= idicatorMultiplier
         invalidate()
     }
     private fun preformActionUp() {
+        Log.i(TAG, "preformActionUp: ")
+
         val timeDx = trackDuration - trackPosition
+
+        barPositionAnimator?.cancel()
         barPositionAnimator = PlayerAnimators.Position(
             trackPosition,
             trackDuration,
@@ -213,13 +232,23 @@ class PlayerWaveBar @JvmOverloads constructor(
             coroutineScope.launch { trackCurrentTime.emit(trackPosition) }
             invalidate()
         }
+
         val to = (timeDx / (frequency * 4)) * 10
-        offsetAnimator = PlayerAnimators.Offset(trackPosition, to, timeDx.toLong()).create {
+        offsetAnimator?.cancel()
+        offsetAnimator = PlayerAnimators.Offset(
+            0,
+            to,
+            timeDx.toLong()
+        ).create {
+            Log.d(TAG, "preformActionUp: offsetAnimator ${this.offsetAnimator}, after action up, is running = ${this.offsetAnimator?.isRunning}")
             this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
+        offsetAnimator?.start()
+
         coroutineScope.launch { rewindTime.emit(trackPosition) }
-        if (audioIsPlaying) barPositionAnimator.start()
+
+        if (audioIsPlaying) barPositionAnimator?.start()
 
         indicatorRadius /= idicatorMultiplier
         invalidate()
@@ -238,7 +267,6 @@ class PlayerWaveBar @JvmOverloads constructor(
             val offset = (dx * propCoef).toInt()
             if (trackPosition + offset in 0..trackDuration)
                 trackPosition += offset
-            Log.d(TAG, "performActionMove: track position = $trackPosition")
             waveCoordinateX = eventX
 
             invalidate()
@@ -249,39 +277,80 @@ class PlayerWaveBar @JvmOverloads constructor(
         return trackDuration.toFloat() / (barWidth.toFloat() - indicatorRadius * 2)
     }
 
-    fun setTrackDuration(value: Int) {
-        trackDuration = value
-        propCoef = calculatePropCoef(value, width, indicatorFullRadius)
+
+    /**
+     * The Wave Bar preset method for synchronous operation with the track.
+     *
+     * @param trackDuration The full length of the track in milliseconds.
+     * @param currentPosition The number of milliseconds already played.
+     * */
+    fun prepare(duration: Int, position: Int) {
+        // Functions are called in a strictly specified sequence.
+        this.trackDuration = duration
+        this.trackPosition = position
+        this.propCoef = calculatePropCoef(trackDuration, width, indicatorFullRadius)
         initAnimators()
     }
-    fun setTrackPosition(value: Int) {
-        trackPosition = value
-    }
+
     fun startAnimation() {
-        offsetAnimator.start()
-        barPositionAnimator.start()
+        Log.i(TAG, "startAnimation: ")
+
+        offsetAnimator?.start()
+        barPositionAnimator?.start()
         audioIsPlaying = true
     }
     fun stopAnimation() {
-        offsetAnimator.cancel()
-        barPositionAnimator.cancel()
+        Log.i(TAG, "stopAnimation: ")
+
+        offsetAnimator?.cancel()
+        barPositionAnimator?.cancel()
         audioIsPlaying = false
     }
     fun pauseAnimation() {
-        offsetAnimator.pause()
-        barPositionAnimator.pause()
+        Log.i(TAG, "pauseAnimation: ")
+
+        offsetAnimator?.pause()
+        barPositionAnimator?.pause()
         audioIsPlaying = false
+
+        Log.d(TAG, "offsetAnimator state = ${offsetAnimator?.isPaused}")
+        Log.d(TAG, "barPositionAnimator state = ${barPositionAnimator?.isPaused}")
     }
     fun resumeAnimation() {
-        offsetAnimator.resume()
-        barPositionAnimator.resume()
+        Log.i(TAG, "resumeAnimation: ")
+
+        offsetAnimator?.resume()
+        barPositionAnimator?.resume()
         audioIsPlaying = true
     }
+
     fun getCurrentTimeFlow(): Flow<Int> {
         return trackCurrentTime
     }
     fun getRewindTimeFlow(): Flow<Int> {
         return rewindTime
+    }
+
+
+    @Deprecated(
+        message = "The method will be removed in one of the following versions, because the operability of the entire wave Bar depends on the sequence " +
+                "of calling this method. When using the new method, you should remove the use of setTrackPosition().",
+        replaceWith = ReplaceWith(expression = "this.prepare(duration = 0, position = 0)"),
+        level = DeprecationLevel.WARNING
+    )
+    fun setTrackDuration(value: Int) {
+        trackDuration = value
+        propCoef = calculatePropCoef(value, width, indicatorFullRadius)
+        initAnimators()
+    }
+    @Deprecated(
+        message = "The method will be removed in one of the following versions, because the operability of the entire wave Bar depends on the sequence " +
+                "of calling this method. When using the new method, you should remove the use of setTrackDuration().",
+        replaceWith = ReplaceWith(expression = "this.prepare(duration = 0, position = 0)"),
+        level = DeprecationLevel.WARNING
+    )
+    fun setTrackPosition(value: Int) {
+        trackPosition = value
     }
 
     companion object {
