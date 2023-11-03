@@ -150,13 +150,10 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     private suspend fun bindInfo(trackInfo: TrackInfoV2) {
         Log.i(TAG, "bindInfo()")
         Log.w(TAG, "bindInfo: inside lifecyle scope.")
-        delay(10)
+        delay(100)
         Log.w(TAG, "bindInfo: inside lifecyle scope after delay.")
         binding.apply {
-            playerBar.setTrackPosition(trackInfo.currentTime)
-            Log.d(TAG, "bindInfo: track position = ${trackInfo.currentTime}")
-            playerBar.setTrackDuration(trackInfo.duration!!)
-            Log.d(TAG, "bindInfo: track duration = ${trackInfo.duration}")
+            playerBar.prepare(trackInfo.duration!!, trackInfo.currentTime)
             fullTrackTime.text = trackInfo.duration.toInt().msToUserFriendlyStr()
             currentTrackTime.text = trackInfo.currentTime.msToUserFriendlyStr()
             fullImg.setImageBitmap(trackInfo.art)
@@ -171,20 +168,12 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
      * */
     private fun startTrack(currentPos: Int) {
         setActionPauseTrackBtn()
-        if (currentPos == 0) {
-            Log.i(TAG, "startTrack()")
-            binding.playerBar.startAnimation()
-        } else {
-            Log.i(TAG, "resumeTrack($currentPos)")
-            binding.playerBar.resumeAnimation()
-        }
-
+        binding.playerBar.startAnimation()
     }
     /** The function pauses the playback of the track and also changes the state of the interface. */
     private fun pauseTrack() {
         setActionPlayTrackBtn()
         Log.i(TAG, "pauseTrack()")
-        binding.playerBar.startAnimation()
         binding.playerBar.pauseAnimation()
     }
 
