@@ -4,8 +4,6 @@ import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
-import android.media.MediaMetadataRetriever
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -23,21 +21,14 @@ import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.PlayerFragmentV2Binding
 import com.onixen.audioplayer.extentions.dp
 import com.onixen.audioplayer.extentions.msToUserFriendlyStr
-import com.onixen.audioplayer.model.data.TrackInfo
 import com.onixen.audioplayer.model.data.TrackInfoV2
-import com.onixen.audioplayer.states.PlayerState
 import com.onixen.audioplayer.states.PlayerStateV2
-import com.onixen.audioplayer.viewModels.PlayerViewModel
 import com.onixen.audioplayer.viewModels.PlayerViewModelV2
 import com.onixen.audioplayer.views.interfaces.PlayerView
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlin.math.log
 
 class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     private var _binding: PlayerFragmentV2Binding? = null
@@ -143,6 +134,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
                         when(it) {
                             is PlayerStateV2.Started -> { startTrack(it.currentPos) }
                             is PlayerStateV2.Paused -> { pauseTrack(it.currentPos) }
+                            is PlayerStateV2.Stoped -> { stopTrack() }
                         }
                     }
                 }
@@ -181,6 +173,11 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         Log.i(TAG, "pauseTrack()")
         binding.playerBar.pauseAnimation(pos!!)
     }
+    private fun stopTrack() {
+        setActionPlayTrackBtn()
+        Log.i(TAG, "stopTrack()")
+        binding.playerBar.stopAnimation()
+    }
 
     private fun setActionPlayTrackBtn() {
         Log.d(TAG, "setActionPlayTrackBtn()")
@@ -189,6 +186,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         }
         binding.playPauseBtn.setImageResource(R.drawable.play_arrow)
     }
+
     private fun setActionPauseTrackBtn() {
         Log.d(TAG, "setActionPauseTrackBtn()")
         binding.startBtn.setOnClickListener {
@@ -212,6 +210,9 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
             binding.playerBar.getCurrentTimeFlow().collect {
                 if (it > 0) {
                     binding.currentTrackTime.text = it.msToUserFriendlyStr()
+                }
+                if (it == trackDuration) {
+                    playerVM.sendIntent(PlayerIntent.Stop)
                 }
             }
         }

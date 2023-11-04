@@ -7,4 +7,5 @@ sealed class PlayerIntent {
     data object Play: PlayerIntent()
     data object Pause: PlayerIntent()
     data class Rewind(val newPos: Int): PlayerIntent()
+    data object Stop: PlayerIntent()
 }
