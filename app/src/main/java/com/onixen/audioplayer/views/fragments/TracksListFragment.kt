@@ -51,13 +51,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             openPlayerFragmentV2(player, retriever)
         }
     }
-    private fun openPlayerFragment(transitionName: String, view: View, player: MediaPlayer) {
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .addSharedElement(view, transitionName)
-            .replace(R.id.fragmentContainer, PlayerFragment.getInstance(player))
-            .commit()
-    }
+
     private fun openPlayerFragmentV2(player: android.media.MediaPlayer, trackInfo: TrackInfoV2) {
         // Если это новый плеер (трек)
         Log.d(TAG,"openPlayerFragmentV2: old player = ${playerVm.fetchPlayerInfo()}, new player = $trackInfo")

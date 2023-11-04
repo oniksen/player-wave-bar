@@ -196,7 +196,6 @@ class PlayerWaveBar @JvmOverloads constructor(
             to = to,
             duration = trackDuration.toLong()
         ).create {
-            Log.d(TAG, "preformActionUp: offsetAnimator ${this.offsetAnimator} is running = ${this.offsetAnimator?.isRunning}")
             this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
@@ -240,7 +239,6 @@ class PlayerWaveBar @JvmOverloads constructor(
             to,
             timeDx.toLong()
         ).create {
-            Log.d(TAG, "preformActionUp: offsetAnimator ${this.offsetAnimator}, after action up, is running = ${this.offsetAnimator?.isRunning}")
             this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
@@ -295,9 +293,11 @@ class PlayerWaveBar @JvmOverloads constructor(
     fun startAnimation() {
         Log.i(TAG, "startAnimation: ")
 
-        offsetAnimator?.start()
-        barPositionAnimator?.start()
+        /*offsetAnimator?.start()
+        barPositionAnimator?.start()*/
         audioIsPlaying = true
+
+        preformActionUp()
     }
     fun stopAnimation() {
         Log.i(TAG, "stopAnimation: ")
@@ -306,12 +306,14 @@ class PlayerWaveBar @JvmOverloads constructor(
         barPositionAnimator?.cancel()
         audioIsPlaying = false
     }
-    fun pauseAnimation() {
+    fun pauseAnimation(currentPos: Int) {
         Log.i(TAG, "pauseAnimation: ")
+        trackPosition = currentPos
+        audioIsPlaying = false
 
+        startAnimation()
         offsetAnimator?.pause()
         barPositionAnimator?.pause()
-        audioIsPlaying = false
 
         Log.d(TAG, "offsetAnimator state = ${offsetAnimator?.isPaused}")
         Log.d(TAG, "barPositionAnimator state = ${barPositionAnimator?.isPaused}")

@@ -2,9 +2,7 @@ package com.onixen.audioplayer.views.activities
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.ActivityMainBinding
-import com.onixen.audioplayer.views.fragments.PlayerFragment
 import com.onixen.audioplayer.views.fragments.TracksListFragment
 
 class MainActivity : AppCompatActivity() {
