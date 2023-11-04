@@ -186,8 +186,9 @@ class PlayerWaveBar @JvmOverloads constructor(
     private fun calculateY(centerY: Float, currentX: Float): Float {
         return centerY + sin((currentX + (animatedOffsetValue + startOffset)) / frequency) * amplitude
     }
+    @Deprecated("The method will be modified and renamed", ReplaceWith("updateAnimators()"))
     private fun initAnimators() {
-        Log.i(TAG, "initAnimators: ")
+        /*Log.i(TAG, "initAnimators: ")
 
         val to = (trackDuration / (frequency * 4)) * 10
         offsetAnimator?.cancel()
@@ -209,16 +210,15 @@ class PlayerWaveBar @JvmOverloads constructor(
             this@PlayerWaveBar.trackPosition = it
             coroutineScope.launch { trackCurrentTime.emit(trackPosition) }
             invalidate()
-        }
-    }
-    private fun preformActionDown() {
-        barPositionAnimator?.pause()
-        indicatorRadius *= idicatorMultiplier
-        invalidate()
-    }
-    private fun preformActionUp() {
-        Log.i(TAG, "preformActionUp: ")
+        }*/
 
+        updateAnimators()
+    }
+    /**
+     * Update the animators using new data about the current position of the track.
+     * */
+    private fun updateAnimators() {
+        Log.i(TAG, "updateAnimators: ")
         val timeDx = trackDuration - trackPosition
 
         barPositionAnimator?.cancel()
@@ -242,11 +242,47 @@ class PlayerWaveBar @JvmOverloads constructor(
             this@PlayerWaveBar.animatedOffsetValue = it + startOffset
             invalidate()
         }
-        offsetAnimator?.start()
+    }
+    private fun preformActionDown() {
+        barPositionAnimator?.pause()
+        indicatorRadius *= idicatorMultiplier
+        invalidate()
+    }
+    private fun preformActionUp() {
+        Log.i(TAG, "preformActionUp: ")
+
+        /*val timeDx = trackDuration - trackPosition
+
+        barPositionAnimator?.cancel()
+        barPositionAnimator = PlayerAnimators.Position(
+            trackPosition,
+            trackDuration,
+            timeDx.toLong()
+        ).create {
+            this@PlayerWaveBar.trackPosition = it
+            coroutineScope.launch { trackCurrentTime.emit(trackPosition) }
+            invalidate()
+        }
+
+        val to = (timeDx / (frequency * 4)) * 10
+        offsetAnimator?.cancel()
+        offsetAnimator = PlayerAnimators.Offset(
+            0,
+            to,
+            timeDx.toLong()
+        ).create {
+            this@PlayerWaveBar.animatedOffsetValue = it + startOffset
+            invalidate()
+        }*/
+
+        updateAnimators()
 
         coroutineScope.launch { rewindTime.emit(trackPosition) }
 
-        if (audioIsPlaying) barPositionAnimator?.start()
+        if (audioIsPlaying) {
+            barPositionAnimator?.start()
+            offsetAnimator?.start()
+        }
 
         indicatorRadius /= idicatorMultiplier
         invalidate()
@@ -287,17 +323,16 @@ class PlayerWaveBar @JvmOverloads constructor(
         this.trackDuration = duration
         this.trackPosition = position
         this.propCoef = calculatePropCoef(trackDuration, width, indicatorFullRadius)
-        initAnimators()
+        updateAnimators()
     }
 
     fun startAnimation() {
         Log.i(TAG, "startAnimation: ")
 
-        /*offsetAnimator?.start()
-        barPositionAnimator?.start()*/
         audioIsPlaying = true
-
-        preformActionUp()
+        updateAnimators()
+        offsetAnimator?.start()
+        barPositionAnimator?.start()
     }
     fun stopAnimation() {
         Log.i(TAG, "stopAnimation: ")
@@ -305,14 +340,18 @@ class PlayerWaveBar @JvmOverloads constructor(
         offsetAnimator?.cancel()
         barPositionAnimator?.cancel()
         audioIsPlaying = false
+
+        trackPosition = 0
+        updateAnimators()
     }
     fun pauseAnimation(currentPos: Int) {
         Log.i(TAG, "pauseAnimation: ")
         trackPosition = currentPos
         audioIsPlaying = false
-
-        startAnimation()
+        updateAnimators()
+        offsetAnimator?.start()
         offsetAnimator?.pause()
+        barPositionAnimator?.start()
         barPositionAnimator?.pause()
 
         Log.d(TAG, "offsetAnimator state = ${offsetAnimator?.isPaused}")
