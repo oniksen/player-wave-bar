@@ -32,6 +32,7 @@ class PlayerViewModelV2: ViewModel() {
             is PlayerIntent.Play -> { startAudio() }
             is PlayerIntent.Pause -> { pauseAudio() }
             is PlayerIntent.Rewind -> { rewindAudio(ms = intent.newPos) }
+            is PlayerIntent.Stop -> { stopTrack() }
             else -> {
                 Log.w(TAG, "sendIntent: unknown player intent.") }
         }
@@ -74,6 +75,14 @@ class PlayerViewModelV2: ViewModel() {
                 player?.seekTo(ms)
                 player?.pause()
             }
+        }
+    }
+    private fun stopTrack() {
+        Log.i(TAG, "stopTrack()")
+        viewModelScope.launch {
+            player?.seekTo(0)
+            player?.pause()
+            _playerState.emit(PlayerStateV2.Stoped)
         }
     }
 
