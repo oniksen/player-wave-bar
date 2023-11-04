@@ -43,6 +43,8 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     private var _binding: PlayerFragmentV2Binding? = null
     private val binding get() = _binding!!
 
+    private var trackDuration: Int = -1
+
     private var startBannerWidthDp: Int = 0
     private var fullBannerWidthDp = 0
 
@@ -140,7 +142,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
                     it?.let {
                         when(it) {
                             is PlayerStateV2.Started -> { startTrack(it.currentPos) }
-                            is PlayerStateV2.Paused -> { pauseTrack() }
+                            is PlayerStateV2.Paused -> { pauseTrack(it.currentPos) }
                         }
                     }
                 }
@@ -153,7 +155,10 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         delay(100)
         Log.w(TAG, "bindInfo: inside lifecyle scope after delay.")
         binding.apply {
-            playerBar.prepare(trackInfo.duration!!, trackInfo.currentTime)
+            trackDuration = trackInfo.duration!!
+            playerBar.prepare(trackInfo.duration, trackInfo.currentTime)
+            Log.d(TAG, "bindInfo: trackInfo.currentTime = ${trackInfo.currentTime.msToUserFriendlyStr()}")
+            
             fullTrackTime.text = trackInfo.duration.toInt().msToUserFriendlyStr()
             currentTrackTime.text = trackInfo.currentTime.msToUserFriendlyStr()
             fullImg.setImageBitmap(trackInfo.art)
@@ -171,10 +176,10 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         binding.playerBar.startAnimation()
     }
     /** The function pauses the playback of the track and also changes the state of the interface. */
-    private fun pauseTrack() {
+    private fun pauseTrack(pos: Int?) {
         setActionPlayTrackBtn()
         Log.i(TAG, "pauseTrack()")
-        binding.playerBar.pauseAnimation()
+        binding.playerBar.pauseAnimation(pos!!)
     }
 
     private fun setActionPlayTrackBtn() {

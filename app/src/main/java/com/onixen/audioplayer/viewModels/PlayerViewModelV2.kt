@@ -61,7 +61,7 @@ class PlayerViewModelV2: ViewModel() {
         viewModelScope.launch {
             if (player?.isPlaying == true) {
                 player?.pause()
-                _playerState.emit(PlayerStateV2.Paused)
+                _playerState.emit(PlayerStateV2.Paused(player?.currentPosition))
             }
         }
     }
