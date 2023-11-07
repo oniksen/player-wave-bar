@@ -32,6 +32,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
+    private var DURATION_TIME = 700L
+
     private var _binding: PlayerFragmentV2Binding? = null
     private val binding get() = _binding!!
 
@@ -45,6 +47,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     override fun onAttach(context: Context) {
         super.onAttach(context)
 
+        DURATION_TIME = resources.getInteger(R.integer.animation_duration).toLong()
         startBannerWidthDp = START_BANNER_WIDTH.dp(requireContext())
         fullBannerWidthDp = FULL_BANNER_WIDTH.dp(requireContext())
     }
@@ -56,10 +59,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         _binding = PlayerFragmentV2Binding.inflate(inflater, container, false)
 
         binding.backBtn.setOnClickListener {
-            requireActivity().supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.fragmentContainer, TracksListFragment.getInstance())
-                .commit()
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
         binding.trackCard.layoutParams.width = startBannerWidthDp
@@ -225,7 +225,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
 
     companion object {
         private const val TAG = "player_fragment_v2"
-        private const val DURATION_TIME = 700L
+        // private const val DURATION_TIME =
         private const val START_BANNER_WIDTH = 270
         private const val FULL_BANNER_WIDTH = 300
 

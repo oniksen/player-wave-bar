@@ -93,6 +93,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         parentFragmentManager
             .beginTransaction()
             .replace(R.id.playerBottomSheet, modalSheet)
+            .addToBackStack(TAG)
             .commit()
     }
     private fun createPlayer(resId: Int): android.media.MediaPlayer {
