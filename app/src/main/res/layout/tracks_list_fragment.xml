@@ -7,13 +7,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.onixen.audioplayer.views.fragments.TracksListFragment">
 
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/main_tool_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:title="Список музыки"
+        app:menu="@menu/main_menu"/>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTracksView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="2"
         android:orientation="vertical"
-        tools:listitem="@layout/track_list_item"/>
+        tools:listitem="@layout/track_list_item"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"/>
     <FrameLayout
         android:id="@+id/playerBottomSheet"
         android:layout_width="match_parent"
