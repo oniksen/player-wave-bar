@@ -11,14 +11,25 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.oniksen.playgroundmvi_pattern.intents.PlayerIntent
 import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.TracksListFragmentBinding
+import com.onixen.audioplayer.extentions.dataStore
 import com.onixen.audioplayer.model.data.TrackInfo
 import com.onixen.audioplayer.viewModels.PlayerViewModel
 import com.onixen.audioplayer.views.adapters.TracksAdapter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private var _binding: TracksListFragmentBinding? = null
@@ -27,9 +38,17 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
 
     private val playerVm: PlayerViewModel by activityViewModels()
     private lateinit var modalSheet: ModalBottomSheetPlayer
-    private val trackListV2: MutableList<Pair<android.media.MediaPlayer, TrackInfo>> = mutableListOf()
+    private val trackList: MutableList<Pair<android.media.MediaPlayer, TrackInfo>> = mutableListOf()
     private lateinit var adapter: TracksAdapter
+    private lateinit var uriFlow: Flow<Set<String>>
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        uriFlow = requireContext().dataStore.data.map { preferences ->
+            preferences[uri_list] ?: setOf()
+        }
+        readUrisFromDataStore()
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -43,7 +62,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         val item2 = with(R.raw.disappearer) {
             Pair(createPlayer(this), getTrackMetadata(this))
         }
-        trackListV2.apply {
+        trackList.apply {
             val searchFirstItemRes = this.find { track -> track.second.title == item1.second.title }
             if (searchFirstItemRes == null) {
                 add(item1)
@@ -60,7 +79,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = TracksAdapter(trackListV2) { bind, player, retriever ->
+        adapter = TracksAdapter(trackList) { bind, player, retriever ->
             showBottomPlayerSheet(player, retriever)
         }
         binding.recyclerTracksView.adapter = adapter
@@ -92,19 +111,21 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             .addToBackStack(TAG)
             .commit()
     }
-    private fun createPlayer(resId: Int): android.media.MediaPlayer {
-        return android.media.MediaPlayer.create(requireContext(), resId)
-    }
 
     private fun initActivityResultLauncher() {
         selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
-            val player = android.media.MediaPlayer()
             it?.let {
-                player.setDataSource(requireContext(), it)
-                player.prepare()
+                trackList.add(
+                    Pair(
+                        createPlayer(it),
+                        getTrackMetadata(requireContext(), it)
+                    )
+                )
+                adapter.notifyItemInserted(trackList.size - 1)
 
-                trackListV2.add(Pair(player, getTrackMetadata(requireContext(), it)))
-                adapter.notifyItemInserted(trackListV2.size - 1)
+                lifecycleScope.launch(Dispatchers.IO) {
+                    addSelectedTrack(it.toString())
+                }
             }
         }
     }
@@ -148,9 +169,49 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
         )
     }
+    /**
+     * Creating an instance of the player by the id of the audio resource of the project.
+     * */
+    private fun createPlayer(resId: Int): android.media.MediaPlayer {
+        return android.media.MediaPlayer.create(requireContext(), resId)
+    }
+    /**
+     * Creating an instance of the player using the audio URI from the device memory.
+     * */
+    private fun createPlayer(uri: Uri): android.media.MediaPlayer {
+        val player = android.media.MediaPlayer()
+        player.setDataSource(requireContext(), uri)
+        player.prepare()
+        return player
+    }
+
+    /**
+     * Save a link to the selected track.
+     * */
+    private suspend fun addSelectedTrack(uri: String) = coroutineScope {
+        requireContext().dataStore.edit { listUris ->
+            listUris[uri_list]?.let { uriSet ->
+                val newList = uriSet.plus(uri)
+                listUris[uri_list] = newList
+            }
+        }
+    }
+    /**
+     * The function of collecting a set of URI tracks stored in the application memory.
+     * */
+    private fun readUrisFromDataStore() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                uriFlow.collect {
+                    Log.d(TAG, "readUrisFromDataStore: $it")
+                }
+            }
+        }
+    }
 
     companion object {
         private const val TAG = "tracks_list_fragment"
+        val uri_list = stringSetPreferencesKey("uri_list")
 
         private var instance: TracksListFragment? = null
         fun getInstance(): TracksListFragment {
