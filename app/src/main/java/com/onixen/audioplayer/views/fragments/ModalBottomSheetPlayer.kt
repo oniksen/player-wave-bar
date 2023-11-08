@@ -41,7 +41,7 @@ class ModalBottomSheetPlayer(private val title: String): Fragment(R.layout.botto
             requireActivity().supportFragmentManager
             .beginTransaction()
             .addSharedElement(it, it.transitionName)
-            .replace(R.id.playerBottomSheet, PlayerFragmentV2.getInstance())
+            .replace(R.id.playerBottomSheet, PlayerFragment.getInstance())
             .addToBackStack(TAG)
             .commit()
         }

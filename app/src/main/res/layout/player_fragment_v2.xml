@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".views.fragments.PlayerFragmentV2"
+    tools:context=".views.fragments.PlayerFragment"
     android:transitionName="player_container_transition"
     android:background="?android:colorBackground">
 

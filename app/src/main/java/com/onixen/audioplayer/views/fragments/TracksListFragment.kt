@@ -1,6 +1,5 @@
 package com.onixen.audioplayer.views.fragments
 
-import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -9,7 +8,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.addCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -17,21 +15,19 @@ import androidx.fragment.app.activityViewModels
 import com.oniksen.playgroundmvi_pattern.intents.PlayerIntent
 import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.TracksListFragmentBinding
-import com.onixen.audioplayer.model.MediaPlayer
-import com.onixen.audioplayer.model.data.TrackInfoV2
-import com.onixen.audioplayer.viewModels.PlayerViewModelV2
-import com.onixen.audioplayer.views.adapters.TracksAdapterV2
-import java.net.URI
+import com.onixen.audioplayer.model.data.TrackInfo
+import com.onixen.audioplayer.viewModels.PlayerViewModel
+import com.onixen.audioplayer.views.adapters.TracksAdapter
 
 class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private var _binding: TracksListFragmentBinding? = null
     private val binding get() = _binding!!
     private lateinit var selectMediaLauncher: ActivityResultLauncher<String>
 
-    private val playerVm: PlayerViewModelV2 by activityViewModels()
+    private val playerVm: PlayerViewModel by activityViewModels()
     private lateinit var modalSheet: ModalBottomSheetPlayer
-    private val trackListV2: MutableList<Pair<android.media.MediaPlayer, TrackInfoV2>> = mutableListOf()
-    private lateinit var adapter: TracksAdapterV2
+    private val trackListV2: MutableList<Pair<android.media.MediaPlayer, TrackInfo>> = mutableListOf()
+    private lateinit var adapter: TracksAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -63,7 +59,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = TracksAdapterV2(trackListV2) { bind, player, retriever ->
+        adapter = TracksAdapter(trackListV2) { bind, player, retriever ->
             openPlayerFragmentV2(player, retriever)
         }
         binding.recyclerTracksView.adapter = adapter
@@ -81,7 +77,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         }
     }
 
-    private fun openPlayerFragmentV2(player: android.media.MediaPlayer, trackInfo: TrackInfoV2) {
+    private fun openPlayerFragmentV2(player: android.media.MediaPlayer, trackInfo: TrackInfo) {
         // Если это новый плеер (трек)
         Log.d(TAG,"openPlayerFragmentV2: old player = ${playerVm.fetchPlayerInfo()}, new player = $trackInfo")
         if (playerVm.fetchPlayerInfo()?.copy(art = null) != trackInfo.copy(art = null)) {
@@ -99,7 +95,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private fun createPlayer(resId: Int): android.media.MediaPlayer {
         return android.media.MediaPlayer.create(requireContext(), resId)
     }
-    private fun getMetadata(resId: Int): TrackInfoV2 {
+    private fun getMetadata(resId: Int): TrackInfo {
         val uri = Uri.parse("android.resource://" + requireContext().packageName + "/" + resId)
         val metadataRetriever = MediaMetadataRetriever()
         metadataRetriever.setDataSource(context, uri)
@@ -108,7 +104,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             BitmapFactory.decodeByteArray(it, 0, it.size)
         }
 
-        return TrackInfoV2(
+        return TrackInfo(
             title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
             artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
             album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
@@ -131,7 +127,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             }
-            val metadata = TrackInfoV2(
+            val metadata = TrackInfo(
                 title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
                 artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
                 album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),

@@ -1,26 +1,22 @@
 package com.onixen.audioplayer.views.adapters
 
+import android.media.MediaPlayer
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import com.onixen.audioplayer.databinding.TrackListItemBinding
-import com.onixen.audioplayer.model.MediaPlayer
+import com.onixen.audioplayer.model.data.TrackInfo
 
 class TracksAdapter(
-    private val list: List<MediaPlayer>,
-    private val escape: (TrackListItemBinding, MediaPlayer) -> Unit
+    private val list: List<Pair<MediaPlayer, TrackInfo>>,
+    private val escape: (TrackListItemBinding, MediaPlayer, TrackInfo) -> Unit
 ): RecyclerView.Adapter<TracksAdapter.ViewHolder>() {
     class ViewHolder(private val binding: TrackListItemBinding): RecyclerView.ViewHolder(binding.root) {
-        fun bind(player: MediaPlayer, escape: (TrackListItemBinding, MediaPlayer) -> Unit) {
-            val metadata = player.getMetadata()
-            binding.smallImg.setImageBitmap(metadata.art)
+        fun bind(player: MediaPlayer, trackInfo: TrackInfo, escape: (TrackListItemBinding, MediaPlayer, TrackInfo) -> Unit) {
+            binding.smallImg.setImageBitmap(trackInfo.art)
 
             binding.previewCard.setOnClickListener {
-                Toast.makeText(binding.root.context, "${metadata.title} is clicked.", Toast.LENGTH_SHORT).show()
-
-                escape.invoke(binding, player)
+                escape.invoke(binding, player, trackInfo)
             }
         }
     }
@@ -35,7 +31,7 @@ class TracksAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(list[position], escape)
+        holder.bind(list[position].first, list[position].second, escape)
     }
 
 }

@@ -5,26 +5,26 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oniksen.playgroundmvi_pattern.intents.PlayerIntent
-import com.onixen.audioplayer.model.data.TrackInfoV2
-import com.onixen.audioplayer.states.PlayerStateV2
+import com.onixen.audioplayer.model.data.TrackInfo
+import com.onixen.audioplayer.states.PlayerState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class PlayerViewModelV2: ViewModel() {
+class PlayerViewModel: ViewModel() {
     private var player: MediaPlayer? = null
-    private var metadata: TrackInfoV2? = null
+    private var metadata: TrackInfo? = null
 
-    private val _playerState: MutableStateFlow<PlayerStateV2?> = MutableStateFlow(null)
+    private val _playerState: MutableStateFlow<PlayerState?> = MutableStateFlow(null)
     val playerState = _playerState.asStateFlow()
 
-    fun attachTrackData(player: MediaPlayer, metadata: TrackInfoV2) {
+    fun attachTrackData(player: MediaPlayer, metadata: TrackInfo) {
         if (this.player != player)
             this.player = player
         if (this.metadata != metadata)
             this.metadata = metadata
     }
-    fun fetchPlayerInfo(): TrackInfoV2? {
+    fun fetchPlayerInfo(): TrackInfo? {
         return metadata
     }
     fun sendIntent(intent: PlayerIntent) {
@@ -38,7 +38,7 @@ class PlayerViewModelV2: ViewModel() {
         }
     }
 
-    fun prepareView(): TrackInfoV2 {
+    fun prepareView(): TrackInfo {
         val updated = metadata?.copy(currentTime = player?.currentPosition!!)!!
         Log.i(TAG, "prepareView: $updated")
         return updated
@@ -53,7 +53,7 @@ class PlayerViewModelV2: ViewModel() {
             // Метод запуска должен срабатывать только если трек в данный момент остановлен.
             if (player?.isPlaying == false) {
                 player?.start()
-                _playerState.emit(PlayerStateV2.Started(player?.currentPosition!!))
+                _playerState.emit(PlayerState.Started(player?.currentPosition!!))
             }
         }
     }
@@ -62,7 +62,7 @@ class PlayerViewModelV2: ViewModel() {
         viewModelScope.launch {
             if (player?.isPlaying == true) {
                 player?.pause()
-                _playerState.emit(PlayerStateV2.Paused(player?.currentPosition))
+                _playerState.emit(PlayerState.Paused(player?.currentPosition))
             }
         }
     }
@@ -82,7 +82,7 @@ class PlayerViewModelV2: ViewModel() {
         viewModelScope.launch {
             player?.seekTo(0)
             player?.pause()
-            _playerState.emit(PlayerStateV2.Stoped)
+            _playerState.emit(PlayerState.Stoped)
         }
     }
 

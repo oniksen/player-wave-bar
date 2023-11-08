@@ -9,7 +9,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultLauncher
 import androidx.core.animation.doOnEnd
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -22,16 +21,16 @@ import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.PlayerFragmentV2Binding
 import com.onixen.audioplayer.extentions.dp
 import com.onixen.audioplayer.extentions.msToUserFriendlyStr
-import com.onixen.audioplayer.model.data.TrackInfoV2
-import com.onixen.audioplayer.states.PlayerStateV2
-import com.onixen.audioplayer.viewModels.PlayerViewModelV2
+import com.onixen.audioplayer.model.data.TrackInfo
+import com.onixen.audioplayer.states.PlayerState
+import com.onixen.audioplayer.viewModels.PlayerViewModel
 import com.onixen.audioplayer.views.interfaces.PlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
+class PlayerFragment: Fragment(R.layout.player_fragment_v2), PlayerView {
     private var DURATION_TIME = 700L
 
     private var _binding: PlayerFragmentV2Binding? = null
@@ -42,7 +41,7 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
     private var startBannerWidthDp: Int = 0
     private var fullBannerWidthDp = 0
 
-    private val playerVM by activityViewModels<PlayerViewModelV2>()
+    private val playerVM by activityViewModels<PlayerViewModel>()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -133,16 +132,16 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
                 playerVM.playerState.collect {
                     it?.let {
                         when(it) {
-                            is PlayerStateV2.Started -> { startTrack(it.currentPos) }
-                            is PlayerStateV2.Paused -> { pauseTrack(it.currentPos) }
-                            is PlayerStateV2.Stoped -> { stopTrack() }
+                            is PlayerState.Started -> { startTrack(it.currentPos) }
+                            is PlayerState.Paused -> { pauseTrack(it.currentPos) }
+                            is PlayerState.Stoped -> { stopTrack() }
                         }
                     }
                 }
             }
         }
     }
-    private suspend fun bindInfo(trackInfo: TrackInfoV2) {
+    private suspend fun bindInfo(trackInfo: TrackInfo) {
         Log.i(TAG, "bindInfo()")
         Log.w(TAG, "bindInfo: inside lifecyle scope.")
         delay(100)
@@ -229,13 +228,13 @@ class PlayerFragmentV2: Fragment(R.layout.player_fragment_v2), PlayerView {
         private const val START_BANNER_WIDTH = 270
         private const val FULL_BANNER_WIDTH = 300
 
-        private var instance: PlayerFragmentV2? = null
-        fun getInstance(): PlayerFragmentV2 {
+        private var instance: PlayerFragment? = null
+        fun getInstance(): PlayerFragment {
             return if (instance == null) {
-                instance = PlayerFragmentV2()
-                instance as PlayerFragmentV2
+                instance = PlayerFragment()
+                instance as PlayerFragment
             } else {
-                instance as PlayerFragmentV2
+                instance as PlayerFragment
             }
         }
     }
