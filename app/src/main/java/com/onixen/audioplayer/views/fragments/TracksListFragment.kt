@@ -1,5 +1,6 @@
 package com.onixen.audioplayer.views.fragments
 
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -37,10 +38,10 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         _binding = TracksListFragmentBinding.inflate(inflater, container, false)
 
         val item1 = with(R.raw.blue_light) {
-            Pair(createPlayer(this), getMetadata(this))
+            Pair(createPlayer(this), getTrackMetadata(this))
         }
         val item2 = with(R.raw.disappearer) {
-            Pair(createPlayer(this), getMetadata(this))
+            Pair(createPlayer(this), getTrackMetadata(this))
         }
         trackListV2.apply {
             val searchFirstItemRes = this.find { track -> track.second.title == item1.second.title }
@@ -60,7 +61,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = TracksAdapter(trackListV2) { bind, player, retriever ->
-            openPlayerFragmentV2(player, retriever)
+            showBottomPlayerSheet(player, retriever)
         }
         binding.recyclerTracksView.adapter = adapter
 
@@ -77,9 +78,8 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         }
     }
 
-    private fun openPlayerFragmentV2(player: android.media.MediaPlayer, trackInfo: TrackInfo) {
+    private fun showBottomPlayerSheet(player: android.media.MediaPlayer, trackInfo: TrackInfo) {
         // Если это новый плеер (трек)
-        Log.d(TAG,"openPlayerFragmentV2: old player = ${playerVm.fetchPlayerInfo()}, new player = $trackInfo")
         if (playerVm.fetchPlayerInfo()?.copy(art = null) != trackInfo.copy(art = null)) {
             playerVm.sendIntent(PlayerIntent.Stop)
             Log.d(TAG, "openPlayerFragmentV2: attach new player")
@@ -95,7 +95,24 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private fun createPlayer(resId: Int): android.media.MediaPlayer {
         return android.media.MediaPlayer.create(requireContext(), resId)
     }
-    private fun getMetadata(resId: Int): TrackInfo {
+
+    private fun initActivityResultLauncher() {
+        selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
+            val player = android.media.MediaPlayer()
+            it?.let {
+                player.setDataSource(requireContext(), it)
+                player.prepare()
+
+                trackListV2.add(Pair(player, getTrackMetadata(requireContext(), it)))
+                adapter.notifyItemInserted(trackListV2.size - 1)
+            }
+        }
+    }
+
+    /**
+     * Getting the necessary track metadata by its id from project resources.
+     * */
+    private fun getTrackMetadata(resId: Int): TrackInfo {
         val uri = Uri.parse("android.resource://" + requireContext().packageName + "/" + resId)
         val metadataRetriever = MediaMetadataRetriever()
         metadataRetriever.setDataSource(context, uri)
@@ -112,32 +129,24 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
         )
     }
+    /**
+     * Getting the necessary track metadata by its uri from the device memory.
+     * */
+    private fun getTrackMetadata(context: Context, uri: Uri): TrackInfo {
+        val metadataRetriever = MediaMetadataRetriever()
+        metadataRetriever.setDataSource(context, uri)
 
-    private fun initActivityResultLauncher() {
-        selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
-            val player = android.media.MediaPlayer()
-            it?.let {
-                player.setDataSource(requireContext(), it)
-            }
-            player.prepare()
-
-            val metadataRetriever = MediaMetadataRetriever()
-            metadataRetriever.setDataSource(context, it)
-
-            val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            }
-            val metadata = TrackInfo(
-                title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
-                artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
-                album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
-                art = trackArt,
-                duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
-            )
-
-            trackListV2.add(Pair(player, metadata))
-            adapter.notifyItemInserted(trackListV2.size - 1)
+        val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         }
+
+        return TrackInfo(
+            title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
+            artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
+            album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
+            art = trackArt,
+            duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
+        )
     }
 
     companion object {
