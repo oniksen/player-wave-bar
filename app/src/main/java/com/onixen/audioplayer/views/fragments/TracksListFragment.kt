@@ -3,6 +3,7 @@ package com.onixen.audioplayer.views.fragments
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -30,7 +31,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-
 class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private var _binding: TracksListFragmentBinding? = null
     private val binding get() = _binding!!
@@ -44,6 +44,13 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val testUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3AMusic%2FLorn_-_Acid_Rain_60240932.mp3")
+            val mediaPlayer = MediaPlayer.create(requireContext(), testUri)
+            Log.d(TAG, "onAttach: $mediaPlayer")
+        }
+
         uriFlow = requireContext().dataStore.data.map { preferences ->
             preferences[uri_list] ?: setOf()
         }
@@ -115,6 +122,8 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private fun initActivityResultLauncher() {
         selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
             it?.let {
+                Log.d(TAG, "initActivityResultLauncher: $it")
+                
                 trackList.add(
                     Pair(
                         createPlayer(it),
@@ -190,8 +199,10 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
      * */
     private suspend fun addSelectedTrack(uri: String) = coroutineScope {
         requireContext().dataStore.edit { listUris ->
-            listUris[uri_list]?.let { uriSet ->
-                val newList = uriSet.plus(uri)
+            if (listUris[uri_list] == null) {
+                listUris[uri_list] = setOf(uri)
+            } else {
+                val newList = listUris[uri_list]!!.plus(uri)
                 listUris[uri_list] = newList
             }
         }
@@ -200,13 +211,32 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
      * The function of collecting a set of URI tracks stored in the application memory.
      * */
     private fun readUrisFromDataStore() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
-                uriFlow.collect {
-                    Log.d(TAG, "readUrisFromDataStore: $it")
+                uriFlow.collect { uriStrList ->
+                    uriStrList.forEach { uriStr ->
+                        val uri = Uri.parse(uriStr)
+                        Log.d(TAG, "readUrisFromDataStore: $uri")
+
+                       /* withContext(Dispatchers.IO) {
+                            trackList.add(
+                                Pair(
+                                    createPlayer(uri),
+                                    getTrackMetadata(requireContext(), uri)
+                                )
+                            )
+                            adapter.notifyItemInserted(trackList.size - 1)
+                        }*/
+                    }
                 }
             }
         }
+    }
+    /**
+     * Update ui tracks list by adding a new item in list and notify the adapter.
+     * */
+    private fun updateList() {
+        
     }
 
     companion object {

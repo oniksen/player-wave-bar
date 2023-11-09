@@ -17,4 +17,3 @@ fun Int.msToUserFriendlyStr(): String {
 fun Int.dp(context: Context): Int {
     return (this * context.resources.displayMetrics.density).toInt()
 }
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "audio_uri_list")
