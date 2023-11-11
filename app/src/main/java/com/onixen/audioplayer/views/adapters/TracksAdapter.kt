@@ -14,6 +14,8 @@ class TracksAdapter(
     class ViewHolder(private val binding: TrackListItemBinding): RecyclerView.ViewHolder(binding.root) {
         fun bind(player: MediaPlayer, trackInfo: TrackInfo, escape: (TrackListItemBinding, MediaPlayer, TrackInfo) -> Unit) {
             binding.smallImg.setImageBitmap(trackInfo.art)
+            binding.trackTitle.text = trackInfo.title
+            binding.trackAuthor.text = trackInfo.artist
 
             binding.previewCard.setOnClickListener {
                 escape.invoke(binding, player, trackInfo)

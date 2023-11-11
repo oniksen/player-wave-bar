@@ -9,9 +9,10 @@
     android:minHeight="70dp"
     android:background="?attr/colorTertiaryContainer"
     android:transitionName="player_container_transition"
-    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+    app:cardBackgroundColor="?attr/colorTertiary"
     style="?attr/materialCardViewElevatedStyle"
     android:layout_marginBottom="8dp"
+    android:layout_marginHorizontal="4dp"
     android:layout_gravity="bottom">
 
     <LinearLayout
@@ -30,6 +31,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             style="?attr/materialCardViewFilledStyle"
+            app:cardBackgroundColor="?attr/colorPrimaryContainer"
             app:cardCornerRadius="35dp"
             android:contentDescription="@string/play_pause_track_btn_content_descr">
 
@@ -54,7 +56,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 tools:text="Track title"
-                android:textColor="?attr/colorOnTertiaryContainer"
+                android:textColor="?attr/colorOnTertiary"
                 android:gravity="center"
                 android:maxLines="1"
                 android:ellipsize="end"
@@ -63,9 +65,10 @@
                 android:id="@+id/playerBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:waveColor="?attr/colorPrimary"
+                app:waveColor="?attr/colorOnTertiaryContainer"
                 tools:filledIn="50"
-                app:amplitude="3dp"/>
+                app:amplitude="2dp"
+                android:transitionName="waveBar"/>
 
         </LinearLayout>
 
