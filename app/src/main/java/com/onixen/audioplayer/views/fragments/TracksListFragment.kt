@@ -6,31 +6,30 @@ import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.oniksen.playgroundmvi_pattern.intents.PlayerIntent
 import com.onixen.audioplayer.R
 import com.onixen.audioplayer.databinding.TracksListFragmentBinding
-import com.onixen.audioplayer.extentions.dataStore
 import com.onixen.audioplayer.model.data.TrackInfo
 import com.onixen.audioplayer.viewModels.PlayerViewModel
 import com.onixen.audioplayer.views.adapters.TracksAdapter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+
 class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private var _binding: TracksListFragmentBinding? = null
     private val binding get() = _binding!!
@@ -38,48 +37,15 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
 
     private val playerVm: PlayerViewModel by activityViewModels()
     private lateinit var modalSheet: ModalBottomSheetPlayer
-    private val trackList: MutableList<Pair<android.media.MediaPlayer, TrackInfo>> = mutableListOf()
+    private val trackList: MutableList<Pair<MediaPlayer, TrackInfo>> = mutableListOf()
     private lateinit var adapter: TracksAdapter
-    private lateinit var uriFlow: Flow<Set<String>>
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val testUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3AMusic%2FLorn_-_Acid_Rain_60240932.mp3")
-            val mediaPlayer = MediaPlayer.create(requireContext(), testUri)
-            Log.d(TAG, "onAttach: $mediaPlayer")
-        }
-
-        uriFlow = requireContext().dataStore.data.map { preferences ->
-            preferences[uri_list] ?: setOf()
-        }
-        readUrisFromDataStore()
-    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = TracksListFragmentBinding.inflate(inflater, container, false)
-
-        val item1 = with(R.raw.blue_light) {
-            Pair(createPlayer(this), getTrackMetadata(this))
-        }
-        val item2 = with(R.raw.disappearer) {
-            Pair(createPlayer(this), getTrackMetadata(this))
-        }
-        trackList.apply {
-            val searchFirstItemRes = this.find { track -> track.second.title == item1.second.title }
-            if (searchFirstItemRes == null) {
-                add(item1)
-            }
-            val searchSecondItemRes = this.find { track -> track.second.title == item2.second.title }
-            if (searchSecondItemRes == null) {
-                add(item2)
-            }
-        }
-
         return binding.root
     }
 
@@ -97,6 +63,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             when (it.itemId) {
                 R.id.add_track -> {
                     selectMediaLauncher.launch("audio/*")
+                    // openFilePicker()
                     true
                 }
                 else -> { false }
@@ -104,7 +71,12 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         }
     }
 
-    private fun showBottomPlayerSheet(player: android.media.MediaPlayer, trackInfo: TrackInfo) {
+    override fun onResume() {
+        super.onResume()
+        showSavedTracks()
+    }
+
+    private fun showBottomPlayerSheet(player: MediaPlayer, trackInfo: TrackInfo) {
         // Если это новый плеер (трек)
         if (playerVm.fetchPlayerInfo()?.copy(art = null) != trackInfo.copy(art = null)) {
             playerVm.sendIntent(PlayerIntent.Stop)
@@ -123,18 +95,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
             it?.let {
                 Log.d(TAG, "initActivityResultLauncher: $it")
-                
-                trackList.add(
-                    Pair(
-                        createPlayer(it),
-                        getTrackMetadata(requireContext(), it)
-                    )
-                )
-                adapter.notifyItemInserted(trackList.size - 1)
-
-                lifecycleScope.launch(Dispatchers.IO) {
-                    addSelectedTrack(it.toString())
-                }
+                saveMediaFile(it)
             }
         }
     }
@@ -160,88 +121,74 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         )
     }
     /**
-     * Getting the necessary track metadata by its uri from the device memory.
+     * Creating an instance of the player by the absolute path of the audio file.
      * */
-    private fun getTrackMetadata(context: Context, uri: Uri): TrackInfo {
-        val metadataRetriever = MediaMetadataRetriever()
-        metadataRetriever.setDataSource(context, uri)
-
-        val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        }
-
-        return TrackInfo(
-            title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
-            artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
-            album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
-            art = trackArt,
-            duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
-        )
-    }
-    /**
-     * Creating an instance of the player by the id of the audio resource of the project.
-     * */
-    private fun createPlayer(resId: Int): android.media.MediaPlayer {
-        return android.media.MediaPlayer.create(requireContext(), resId)
-    }
-    /**
-     * Creating an instance of the player using the audio URI from the device memory.
-     * */
-    private fun createPlayer(uri: Uri): android.media.MediaPlayer {
-        val player = android.media.MediaPlayer()
-        player.setDataSource(requireContext(), uri)
-        player.prepare()
-        return player
-    }
-
-    /**
-     * Save a link to the selected track.
-     * */
-    private suspend fun addSelectedTrack(uri: String) = coroutineScope {
-        requireContext().dataStore.edit { listUris ->
-            if (listUris[uri_list] == null) {
-                listUris[uri_list] = setOf(uri)
-            } else {
-                val newList = listUris[uri_list]!!.plus(uri)
-                listUris[uri_list] = newList
-            }
+    private fun createPlayer(absolutePath: String): MediaPlayer {
+        return MediaPlayer().apply {
+            setDataSource(absolutePath)
+            prepare()
         }
     }
     /**
      * The function of collecting a set of URI tracks stored in the application memory.
      * */
-    private fun readUrisFromDataStore() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                uriFlow.collect { uriStrList ->
-                    uriStrList.forEach { uriStr ->
-                        val uri = Uri.parse(uriStr)
-                        Log.d(TAG, "readUrisFromDataStore: $uri")
+    private fun saveMediaFile(uri: Uri) {
+        val inputStream = requireContext().contentResolver.openInputStream(uri)
+        val outputStream: OutputStream = FileOutputStream(createMediaFile())
 
-                       /* withContext(Dispatchers.IO) {
-                            trackList.add(
-                                Pair(
-                                    createPlayer(uri),
-                                    getTrackMetadata(requireContext(), uri)
-                                )
-                            )
-                            adapter.notifyItemInserted(trackList.size - 1)
-                        }*/
-                    }
-                }
+        inputStream?.copyTo(outputStream, bufferSize = DEFAULT_BUFFER_SIZE)
+
+        outputStream.close()
+        inputStream?.close()
+    }
+
+    private fun createMediaFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = requireActivity().getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+
+        return File.createTempFile("MEDIA_$timeStamp", ".mp3", storageDir)
+    }
+    private fun showSavedTracks() {
+        Log.d(TAG, "showSavedTracks()")
+
+        getSavedFiles().forEach {
+            val mediaPlayer = createPlayer(it.absolutePath)
+
+            val metadataRetriever = MediaMetadataRetriever()
+            metadataRetriever.setDataSource(it.absolutePath)
+
+            val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            }
+
+            val trackInfo = TrackInfo(
+                title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
+                artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
+                album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
+                art = trackArt,
+                duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
+            )
+
+            val trackExist = trackList.find { item -> item.second.copy(art = null) == trackInfo.copy(art = null) }
+            if (trackExist == null) {
+                trackList.add(
+                    Pair(
+                        mediaPlayer,
+                        trackInfo
+                    )
+                )
+                adapter.notifyItemInserted(trackList.size - 1)
             }
         }
     }
-    /**
-     * Update ui tracks list by adding a new item in list and notify the adapter.
-     * */
-    private fun updateList() {
-        
+    private fun getSavedFiles(): List<File> {
+        val storageDir: File? = requireActivity().getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+        val files = storageDir?.listFiles()
+        return files?.toList() ?: emptyList()
     }
 
     companion object {
         private const val TAG = "tracks_list_fragment"
-        val uri_list = stringSetPreferencesKey("uri_list")
 
         private var instance: TracksListFragment? = null
         fun getInstance(): TracksListFragment {
