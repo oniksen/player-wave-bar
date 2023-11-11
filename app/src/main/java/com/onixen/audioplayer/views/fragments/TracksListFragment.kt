@@ -101,15 +101,14 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     }
 
     /**
-     * Getting the necessary track metadata by its id from project resources.
+     * Getting the necessary track metadata by its absolute path.
      * */
-    private fun getTrackMetadata(resId: Int): TrackInfo {
-        val uri = Uri.parse("android.resource://" + requireContext().packageName + "/" + resId)
+    private fun getTrackMetadata(absolutePath: String): TrackInfo {
         val metadataRetriever = MediaMetadataRetriever()
-        metadataRetriever.setDataSource(context, uri)
+        metadataRetriever.setDataSource(absolutePath)
 
-        val trackArt = metadataRetriever.embeddedPicture?.let {
-            BitmapFactory.decodeByteArray(it, 0, it.size)
+        val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         }
 
         return TrackInfo(
@@ -153,21 +152,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
 
         getSavedFiles().forEach {
             val mediaPlayer = createPlayer(it.absolutePath)
-
-            val metadataRetriever = MediaMetadataRetriever()
-            metadataRetriever.setDataSource(it.absolutePath)
-
-            val trackArt = metadataRetriever.embeddedPicture?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            }
-
-            val trackInfo = TrackInfo(
-                title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
-                artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
-                album = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM),
-                art = trackArt,
-                duration = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toInt()
-            )
+            val trackInfo = getTrackMetadata(it.absolutePath)
 
             val trackExist = trackList.find { item -> item.second.copy(art = null) == trackInfo.copy(art = null) }
             if (trackExist == null) {
