@@ -39,7 +39,13 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
     private lateinit var modalSheet: ModalBottomSheetPlayer
     private val trackList: MutableList<Pair<MediaPlayer, TrackInfo>> = mutableListOf()
     private lateinit var adapter: TracksAdapter
+    private var audioFilesDir: File? = null
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+
+        audioFilesDir = requireActivity().getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -48,7 +54,6 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         _binding = TracksListFragmentBinding.inflate(inflater, container, false)
         return binding.root
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -70,7 +75,6 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             }
         }
     }
-
     override fun onResume() {
         super.onResume()
         showSavedTracks()
@@ -90,7 +94,6 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             .addToBackStack(TAG)
             .commit()
     }
-
     private fun initActivityResultLauncher() {
         selectMediaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
             it?.let {
@@ -99,7 +102,6 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             }
         }
     }
-
     /**
      * Getting the necessary track metadata by its absolute path.
      * */
@@ -140,36 +142,42 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
         outputStream.close()
         inputStream?.close()
     }
-
     private fun createMediaFile(): File {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val storageDir: File? = requireActivity().getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-
-        return File.createTempFile("MEDIA_$timeStamp", ".mp3", storageDir)
+        return File.createTempFile("MEDIA_$timeStamp", ".mp3", audioFilesDir)
     }
     private fun showSavedTracks() {
         Log.d(TAG, "showSavedTracks()")
 
         getSavedFiles().forEach {
-            val mediaPlayer = createPlayer(it.absolutePath)
-            val trackInfo = getTrackMetadata(it.absolutePath)
+            with(it.absolutePath) {
+                val mediaPlayer = createPlayer(this)
+                val trackInfo = getTrackMetadata(this)
 
-            val trackExist = trackList.find { item -> item.second.copy(art = null) == trackInfo.copy(art = null) }
-            if (trackExist == null) {
-                trackList.add(
-                    Pair(
-                        mediaPlayer,
-                        trackInfo
-                    )
-                )
-                adapter.notifyItemInserted(trackList.size - 1)
+                addTrackToList(trackInfo, mediaPlayer).let { isAdded ->
+                    if (isAdded) adapter.notifyItemInserted(trackList.size - 1)
+                    else Log.i(TAG, "showSavedTracks: This track already added.")
+                }
             }
         }
     }
+    /**
+     * Get a list of audio files stored in the app's memory.
+     * */
     private fun getSavedFiles(): List<File> {
-        val storageDir: File? = requireActivity().getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-        val files = storageDir?.listFiles()
+        val files = audioFilesDir?.listFiles()
         return files?.toList() ?: emptyList()
+    }
+    /**
+     * Add a track to the track list if it is not in it.
+     * */
+    private fun addTrackToList(trackInfo: TrackInfo, player: MediaPlayer): Boolean {
+        val trackExist = trackList.find { item -> item.second.copy(art = null) == trackInfo.copy(art = null) }
+        if (trackExist == null) {
+            trackList.add(Pair(player, trackInfo))
+            return true
+        }
+        return false
     }
 
     companion object {
