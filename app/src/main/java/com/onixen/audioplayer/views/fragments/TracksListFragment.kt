@@ -68,7 +68,6 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
             when (it.itemId) {
                 R.id.add_track -> {
                     selectMediaLauncher.launch("audio/*")
-                    // openFilePicker()
                     true
                 }
                 else -> { false }
