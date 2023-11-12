@@ -6,11 +6,11 @@ plugins {
 
 android {
     namespace = "com.onixen.playervawebar"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 24
-        version = "0.3.4"
+        version = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
