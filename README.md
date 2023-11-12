@@ -1,6 +1,10 @@
 # PlayerWaveBar
  Custom bar for displaying audio track position.
 
+An example of using PlayerWaveBar in a player application.
+
+<img width="250" alt="Usage example." src="https://github.com/Onixen/player-wave-bar/assets/47987147/3e162035-dbc0-4c30-a958-3658460e9430">
+
 ## Implementation
  Add it in your settings.gradle.kts file:
 ```kotlin copy
