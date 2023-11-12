@@ -1,6 +1,7 @@
 package com.onixen.audioplayer.views.adapters
 
 import android.media.MediaPlayer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -35,5 +36,4 @@ class TracksAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(list[position].first, list[position].second, escape)
     }
-
 }

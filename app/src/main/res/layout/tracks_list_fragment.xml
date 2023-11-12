@@ -20,7 +20,6 @@
         app:menu="@menu/main_menu"/>
 
     </com.google.android.material.appbar.AppBarLayout>
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTracksView"
         android:layout_width="match_parent"
@@ -31,11 +30,13 @@
         tools:listitem="@layout/track_list_item"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
         android:paddingBottom="100dp"
-        android:clipToPadding="false"/>
+        android:clipToPadding="false"
+        android:layout_marginHorizontal="4dp"/>
     <FrameLayout
         android:id="@+id/playerBottomSheet"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="bottom" />
+        android:layout_gravity="bottom"
+        android:elevation="4dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

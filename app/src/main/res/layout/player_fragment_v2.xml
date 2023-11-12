@@ -92,7 +92,8 @@
         android:layout_marginHorizontal="36dp"
         app:waveColor="?attr/colorOnTertiaryContainer"
         android:transitionName="waveBar"
-        tools:filledIn="40"/>
+        tools:filledIn="40"
+        app:amplitude="3dp"/>
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/startBtn"
         android:layout_width="wrap_content"

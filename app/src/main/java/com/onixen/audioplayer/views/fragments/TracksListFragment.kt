@@ -71,6 +71,7 @@ class TracksListFragment: Fragment(R.layout.tracks_list_fragment) {
                 else -> { false }
             }
         }
+
     }
     override fun onResume() {
         super.onResume()
