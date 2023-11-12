@@ -4,4 +4,5 @@
     <string name="hide_btn_content_descr">Hide page.</string>
     <string name="track_banner_content_descr">Track art.</string>
     <string name="play_pause_track_btn_content_descr">Play / pause track.</string>
+    <string name="main_menu_add_descr">Add track</string>
 </resources>

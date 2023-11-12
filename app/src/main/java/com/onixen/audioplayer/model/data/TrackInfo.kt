@@ -6,6 +6,7 @@ data class TrackInfo(
     val title: String?,
     val artist: String?,
     val album: String?,
-    val duration: String?,
-    val art: Bitmap?
+    val art: Bitmap?,
+    val duration: Int?,
+    val currentTime: Int = 0
 )
